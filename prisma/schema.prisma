@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model boards {
+  id           Int      @id @default(autoincrement())
+  ats          String
+  slug         String
+  company_name String?
+  careers_url  String?
+  api_url      String?
+  job_count    Int?
+  probed_at    DateTime @db.Timestamptz(6)
+
+  @@unique([ats, slug])
+}
+
+model jobs {
+  id               Int      @id @default(autoincrement())
+  user_name        String
+  title            String
+  company_name     String?
+  url              String?
+  location         String?
+  department       String?
+  ats              String?
+  matched_keywords String?
+  fetched_at       DateTime @db.Timestamptz(6)
+  status           String   @default("new")
+  users            users    @relation(fields: [user_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([url, user_name])
+}
+
+model runs {
+  id        Int      @id @default(autoincrement())
+  user_name String?
+  stage     String
+  detail    String?
+  run_at    DateTime @db.Timestamptz(6)
+}
+
+model users {
+  name       String   @id
+  keywords   String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  jobs       jobs[]
+}
