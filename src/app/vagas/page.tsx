@@ -8,6 +8,8 @@ import {
   bulkUpdateStatus,
   getDistinctSources,
   getDistinctKeywords,
+  deleteJob,
+  bulkDeleteJobs,
   type JobFilters,
 } from "@/app/actions/jobs";
 import {
@@ -43,6 +45,7 @@ import {
   X,
   Search,
   Briefcase,
+  Trash2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -152,6 +155,22 @@ export default function VagasPage() {
         selected.has(j.id) ? { ...j, status: newStatus } : j
       )
     );
+    setSelected(new Set());
+  };
+
+  const handleDelete = async (id: number) => {
+    await deleteJob(id);
+    setJobs((prev) => prev.filter((j) => j.id !== id));
+    setTotal((prev) => prev - 1);
+    setSelected((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    await bulkDeleteJobs(ids);
+    setJobs((prev) => prev.filter((j) => !selected.has(j.id)));
+    setTotal((prev) => prev - ids.length);
     setSelected(new Set());
   };
 
@@ -283,6 +302,14 @@ export default function VagasPage() {
                 {s.label}
               </Button>
             ))}
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+            >
+              <Trash2 size={14} className="mr-1" />
+              Excluir
+            </Button>
           </div>
           <Button
             variant="ghost"
@@ -373,16 +400,25 @@ export default function VagasPage() {
                     />
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    {job.url && (
-                      <a
-                        href={job.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted-foreground hover:text-foreground"
+                    <div className="flex items-center gap-2">
+                      {job.url && (
+                        <a
+                          href={job.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleDelete(job.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        title="Excluir vaga"
                       >
-                        <ExternalLink size={14} />
-                      </a>
-                    )}
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

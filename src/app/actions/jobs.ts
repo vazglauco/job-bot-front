@@ -68,6 +68,16 @@ export async function bulkUpdateStatus(ids: number[], status: string) {
   revalidatePath("/vagas");
 }
 
+export async function deleteJob(id: number) {
+  await prisma.jobs.delete({ where: { id } });
+  revalidatePath("/vagas");
+}
+
+export async function bulkDeleteJobs(ids: number[]) {
+  await prisma.jobs.deleteMany({ where: { id: { in: ids } } });
+  revalidatePath("/vagas");
+}
+
 export async function getDistinctSources(userName: string) {
   const sources = await prisma.jobs.findMany({
     where: { user_name: userName },
