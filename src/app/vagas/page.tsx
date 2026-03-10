@@ -10,6 +10,8 @@ import {
   getDistinctKeywords,
   deleteJob,
   bulkDeleteJobs,
+  restoreJob,
+  bulkRestoreJobs,
   type JobFilters,
 } from "@/app/actions/jobs";
 import {
@@ -46,6 +48,7 @@ import {
   Search,
   Briefcase,
   Trash2,
+  Undo2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -88,6 +91,7 @@ export default function VagasPage() {
   const [atsFilter, setAtsFilter] = useState<string>("");
   const [keywordFilter, setKeywordFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Filter options
   const [sources, setSources] = useState<string[]>([]);
@@ -105,7 +109,11 @@ export default function VagasPage() {
     if (search) filters.search = search;
     if (atsFilter) filters.ats = atsFilter;
     if (keywordFilter) filters.keyword = keywordFilter;
-    if (statusFilter) filters.status = statusFilter;
+    if (showDeleted) {
+      filters.status = "deleted";
+    } else if (statusFilter) {
+      filters.status = statusFilter;
+    }
 
     startTransition(async () => {
       const result = await getJobs(userName, filters);
@@ -113,7 +121,7 @@ export default function VagasPage() {
       setTotal(result.total);
       setTotalPages(result.totalPages);
     });
-  }, [userName, page, search, atsFilter, keywordFilter, statusFilter]);
+  }, [userName, page, search, atsFilter, keywordFilter, statusFilter, showDeleted]);
 
   // Load filter options
   useEffect(() => {
@@ -169,6 +177,22 @@ export default function VagasPage() {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
     await bulkDeleteJobs(ids);
+    setJobs((prev) => prev.filter((j) => !selected.has(j.id)));
+    setTotal((prev) => prev - ids.length);
+    setSelected(new Set());
+  };
+
+  const handleRestore = async (id: number) => {
+    await restoreJob(id);
+    setJobs((prev) => prev.filter((j) => j.id !== id));
+    setTotal((prev) => prev - 1);
+    setSelected((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  };
+
+  const handleBulkRestore = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    await bulkRestoreJobs(ids);
     setJobs((prev) => prev.filter((j) => !selected.has(j.id)));
     setTotal((prev) => prev - ids.length);
     setSelected(new Set());
@@ -281,6 +305,16 @@ export default function VagasPage() {
             <X size={14} className="mr-1" /> Limpar
           </Button>
         )}
+        <div className="ml-auto">
+          <Button
+            variant={showDeleted ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => { setShowDeleted((v) => !v); setPage(1); }}
+          >
+            <Trash2 size={14} className="mr-1" />
+            {showDeleted ? "Voltar às vagas" : "Lixeira"}
+          </Button>
+        </div>
       </div>
 
       {/* Bulk actions */}
@@ -291,25 +325,38 @@ export default function VagasPage() {
           </span>
           <div className="mx-2 h-5 w-px bg-primary/20" />
           <div className="flex gap-2">
-            {statusOptions.map((s) => (
+            {showDeleted ? (
               <Button
-                key={s.value}
                 variant="outline"
                 size="sm"
-                onClick={() => handleBulkStatus(s.value)}
+                onClick={handleBulkRestore}
               >
-                <s.icon size={14} className="mr-1" />
-                {s.label}
+                <Undo2 size={14} className="mr-1" />
+                Restaurar
               </Button>
-            ))}
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleBulkDelete}
-            >
-              <Trash2 size={14} className="mr-1" />
-              Excluir
-            </Button>
+            ) : (
+              <>
+                {statusOptions.map((s) => (
+                  <Button
+                    key={s.value}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkStatus(s.value)}
+                  >
+                    <s.icon size={14} className="mr-1" />
+                    {s.label}
+                  </Button>
+                ))}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                >
+                  <Trash2 size={14} className="mr-1" />
+                  Excluir
+                </Button>
+              </>
+            )}
           </div>
           <Button
             variant="ghost"
@@ -411,13 +458,23 @@ export default function VagasPage() {
                           <ExternalLink size={14} />
                         </a>
                       )}
-                      <button
-                        onClick={() => handleDelete(job.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                        title="Excluir vaga"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {job.status === "deleted" ? (
+                        <button
+                          onClick={() => handleRestore(job.id)}
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                          title="Restaurar vaga"
+                        >
+                          <Undo2 size={14} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDelete(job.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          title="Excluir vaga"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

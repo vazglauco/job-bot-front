@@ -17,6 +17,15 @@ export async function getJobs(userName: string, filters: JobFilters = {}) {
 
   const where: Record<string, unknown> = { user_name: userName };
 
+  // By default, exclude deleted jobs unless explicitly filtering for them
+  if (status === "deleted") {
+    where.status = "deleted";
+  } else if (status) {
+    where.status = status;
+  } else {
+    where.status = { not: "deleted" };
+  }
+
   if (search) {
     where.OR = [
       { title: { contains: search, mode: "insensitive" } },
@@ -27,7 +36,6 @@ export async function getJobs(userName: string, filters: JobFilters = {}) {
   if (keyword) {
     where.matched_keywords = { contains: keyword, mode: "insensitive" };
   }
-  if (status) where.status = status;
 
   const [jobs, total] = await Promise.all([
     prisma.jobs.findMany({
@@ -69,12 +77,34 @@ export async function bulkUpdateStatus(ids: number[], status: string) {
 }
 
 export async function deleteJob(id: number) {
-  await prisma.jobs.delete({ where: { id } });
+  await prisma.jobs.update({
+    where: { id },
+    data: { status: "deleted" },
+  });
   revalidatePath("/vagas");
 }
 
 export async function bulkDeleteJobs(ids: number[]) {
-  await prisma.jobs.deleteMany({ where: { id: { in: ids } } });
+  await prisma.jobs.updateMany({
+    where: { id: { in: ids } },
+    data: { status: "deleted" },
+  });
+  revalidatePath("/vagas");
+}
+
+export async function restoreJob(id: number) {
+  await prisma.jobs.update({
+    where: { id },
+    data: { status: "new" },
+  });
+  revalidatePath("/vagas");
+}
+
+export async function bulkRestoreJobs(ids: number[]) {
+  await prisma.jobs.updateMany({
+    where: { id: { in: ids } },
+    data: { status: "new" },
+  });
   revalidatePath("/vagas");
 }
 
