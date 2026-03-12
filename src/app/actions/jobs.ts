@@ -48,7 +48,7 @@ export async function getJobs(userName: string, filters: JobFilters = {}) {
     orderBy = { fetched_at: "desc" };
   }
 
-  const [jobs, total] = await Promise.all([
+  const [rawJobs, total] = await Promise.all([
     prisma.jobs.findMany({
       where,
       orderBy,
@@ -57,6 +57,16 @@ export async function getJobs(userName: string, filters: JobFilters = {}) {
     }),
     prisma.jobs.count({ where }),
   ]);
+
+  // Ensure numeric and JSON fields are plain serializable values
+  // (Prisma can return Decimal objects for Float fields on some runtimes)
+  const jobs = rawJobs.map((job) => ({
+    ...job,
+    ai_score: job.ai_score != null ? Number(job.ai_score) : null,
+    ai_analysis: job.ai_analysis != null
+      ? JSON.parse(JSON.stringify(job.ai_analysis))
+      : null,
+  }));
 
   return {
     jobs,
@@ -68,7 +78,15 @@ export async function getJobs(userName: string, filters: JobFilters = {}) {
 }
 
 export async function getJobById(id: number) {
-  return prisma.jobs.findUnique({ where: { id } });
+  const job = await prisma.jobs.findUnique({ where: { id } });
+  if (!job) return null;
+  return {
+    ...job,
+    ai_score: job.ai_score != null ? Number(job.ai_score) : null,
+    ai_analysis: job.ai_analysis != null
+      ? JSON.parse(JSON.stringify(job.ai_analysis))
+      : null,
+  };
 }
 
 export async function updateJobStatus(id: number, status: string) {
