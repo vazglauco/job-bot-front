@@ -82,7 +82,7 @@ function ScoreDisplay({ score, analysis }: { score: number | null; analysis: Rec
           <div className="flex-1">
             <div className="flex items-baseline justify-between">
               <span className={`text-2xl font-bold ${textColor}`}>{pct}%</span>
-              {response?.match_reasoning && (
+              {!!response?.match_reasoning && (
                 <span className="ml-2 text-xs leading-tight text-muted-foreground">{String(response.match_reasoning)}</span>
               )}
             </div>
@@ -94,19 +94,19 @@ function ScoreDisplay({ score, analysis }: { score: number | null; analysis: Rec
 
         {response && (
           <div className="mt-3 grid grid-cols-2 gap-2">
-            {response.role_category && (
+            {!!response.role_category && (
               <div className="rounded-lg bg-muted/50 px-3 py-1.5">
                 <span className="text-[10px] font-medium uppercase text-muted-foreground">Categoria</span>
                 <p className="text-sm font-medium">{String(response.role_category).replace(/_/g, " ")}</p>
               </div>
             )}
-            {response.role_specific && (
+            {!!response.role_specific && (
               <div className="rounded-lg bg-muted/50 px-3 py-1.5">
                 <span className="text-[10px] font-medium uppercase text-muted-foreground">Cargo</span>
                 <p className="text-sm font-medium">{String(response.role_specific).replace(/_/g, " ")}</p>
               </div>
             )}
-            {response.seniority && (
+            {!!response.seniority && (
               <div className="rounded-lg bg-muted/50 px-3 py-1.5">
                 <span className="text-[10px] font-medium uppercase text-muted-foreground">Senioridade</span>
                 <p className="text-sm font-medium capitalize">{String(response.seniority)}</p>
