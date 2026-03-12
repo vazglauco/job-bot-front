@@ -10,20 +10,23 @@ export interface JobFilters {
   status?: string;
   page?: number;
   perPage?: number;
+  sortBy?: string;
 }
 
 export async function getJobs(userName: string, filters: JobFilters = {}) {
-  const { search, ats, keyword, status, page = 1, perPage = 20 } = filters;
+  const { search, ats, keyword, status, page = 1, perPage = 20, sortBy } = filters;
 
   const where: Record<string, unknown> = { user_name: userName };
 
-  // By default, exclude deleted jobs unless explicitly filtering for them
+  // Status filtering
   if (status === "deleted") {
     where.status = "deleted";
+  } else if (status === "irrelevant") {
+    where.status = "irrelevant";
   } else if (status) {
     where.status = status;
   } else {
-    where.status = { not: "deleted" };
+    where.status = { notIn: ["deleted", "irrelevant"] };
   }
 
   if (search) {
@@ -37,10 +40,18 @@ export async function getJobs(userName: string, filters: JobFilters = {}) {
     where.matched_keywords = { contains: keyword, mode: "insensitive" };
   }
 
+  // Determine ordering
+  let orderBy: Record<string, string> | Record<string, string>[];
+  if (sortBy === "score") {
+    orderBy = [{ ai_score: "desc" }, { fetched_at: "desc" }];
+  } else {
+    orderBy = { fetched_at: "desc" };
+  }
+
   const [jobs, total] = await Promise.all([
     prisma.jobs.findMany({
       where,
-      orderBy: { fetched_at: "desc" },
+      orderBy,
       skip: (page - 1) * perPage,
       take: perPage,
     }),

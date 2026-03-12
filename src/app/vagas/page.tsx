@@ -49,6 +49,9 @@ import {
   Briefcase,
   Trash2,
   Undo2,
+  Brain,
+  ArrowUpDown,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -69,6 +72,8 @@ interface Job {
   matched_keywords: string | null;
   fetched_at: Date;
   status: string;
+  ai_score: number | null;
+  ai_analysis: Record<string, unknown> | null;
 }
 
 const statusOptions = [
@@ -77,6 +82,20 @@ const statusOptions = [
   { value: "applied", label: "Aplicada", icon: Send, color: "text-emerald-600 bg-emerald-50" },
   { value: "dismissed", label: "Descartada", icon: EyeOff, color: "text-gray-500 bg-gray-100" },
 ];
+
+function ScoreBadge({ score }: { score: number | null }) {
+  if (score === null || score === undefined) return <span className="text-xs text-muted-foreground">—</span>;
+  const pct = Math.round(score * 100);
+  let color = "text-red-700 bg-red-50 border-red-200";
+  if (score >= 0.7) color = "text-emerald-700 bg-emerald-50 border-emerald-200";
+  else if (score >= 0.5) color = "text-amber-700 bg-amber-50 border-amber-200";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${color}`}>
+      <Brain size={11} />
+      {pct}%
+    </span>
+  );
+}
 
 export default function VagasPage() {
   const { userName } = useUser();
@@ -91,7 +110,8 @@ export default function VagasPage() {
   const [atsFilter, setAtsFilter] = useState<string>("");
   const [keywordFilter, setKeywordFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [showDeleted, setShowDeleted] = useState(false);
+  const [viewMode, setViewMode] = useState<"active" | "irrelevant" | "deleted">("active");
+  const [sortBy, setSortBy] = useState<string>("");
 
   // Filter options
   const [sources, setSources] = useState<string[]>([]);
@@ -109,19 +129,23 @@ export default function VagasPage() {
     if (search) filters.search = search;
     if (atsFilter) filters.ats = atsFilter;
     if (keywordFilter) filters.keyword = keywordFilter;
-    if (showDeleted) {
+    if (sortBy) filters.sortBy = sortBy;
+
+    if (viewMode === "deleted") {
       filters.status = "deleted";
+    } else if (viewMode === "irrelevant") {
+      filters.status = "irrelevant";
     } else if (statusFilter) {
       filters.status = statusFilter;
     }
 
     startTransition(async () => {
       const result = await getJobs(userName, filters);
-      setJobs(result.jobs);
+      setJobs(result.jobs as Job[]);
       setTotal(result.total);
       setTotalPages(result.totalPages);
     });
-  }, [userName, page, search, atsFilter, keywordFilter, statusFilter, showDeleted]);
+  }, [userName, page, search, atsFilter, keywordFilter, statusFilter, viewMode, sortBy]);
 
   // Load filter options
   useEffect(() => {
@@ -278,19 +302,21 @@ export default function VagasPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={(v) => setStatusAndReset(v ?? "")}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            {statusOptions.map((s) => (
-              <SelectItem key={s.value} value={s.value}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {viewMode === "active" && (
+          <Select value={statusFilter} onValueChange={(v) => setStatusAndReset(v ?? "")}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {statusOptions.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {(search || atsFilter || keywordFilter || statusFilter) && (
           <Button
             variant="ghost"
@@ -305,14 +331,30 @@ export default function VagasPage() {
             <X size={14} className="mr-1" /> Limpar
           </Button>
         )}
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
           <Button
-            variant={showDeleted ? "destructive" : "outline"}
+            variant={sortBy === "score" ? "default" : "outline"}
             size="sm"
-            onClick={() => { setShowDeleted((v) => !v); setPage(1); }}
+            onClick={() => { setSortBy(sortBy === "score" ? "" : "score"); setPage(1); }}
+          >
+            <ArrowUpDown size={14} className="mr-1" />
+            Score
+          </Button>
+          <Button
+            variant={viewMode === "irrelevant" ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => { setViewMode(viewMode === "irrelevant" ? "active" : "irrelevant"); setPage(1); setSelected(new Set()); }}
+          >
+            <AlertTriangle size={14} className="mr-1" />
+            {viewMode === "irrelevant" ? "Voltar às vagas" : "Irrelevantes"}
+          </Button>
+          <Button
+            variant={viewMode === "deleted" ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => { setViewMode(viewMode === "deleted" ? "active" : "deleted"); setPage(1); setSelected(new Set()); }}
           >
             <Trash2 size={14} className="mr-1" />
-            {showDeleted ? "Voltar às vagas" : "Lixeira"}
+            {viewMode === "deleted" ? "Voltar às vagas" : "Lixeira"}
           </Button>
         </div>
       </div>
@@ -325,7 +367,7 @@ export default function VagasPage() {
           </span>
           <div className="mx-2 h-5 w-px bg-primary/20" />
           <div className="flex gap-2">
-            {showDeleted ? (
+            {viewMode !== "active" ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -388,6 +430,7 @@ export default function VagasPage() {
                 <TableHead>Empresa</TableHead>
                 <TableHead>Título</TableHead>
                 <TableHead>Keywords</TableHead>
+                <TableHead>Score</TableHead>
                 <TableHead>Local</TableHead>
                 <TableHead>Fonte</TableHead>
                 <TableHead>Status</TableHead>
@@ -432,6 +475,9 @@ export default function VagasPage() {
                         ))}
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <ScoreBadge score={job.ai_score} />
+                  </TableCell>
                   <TableCell className="max-w-30 truncate text-sm text-muted-foreground">
                     {job.location || "—"}
                   </TableCell>
@@ -458,7 +504,7 @@ export default function VagasPage() {
                           <ExternalLink size={14} />
                         </a>
                       )}
-                      {job.status === "deleted" ? (
+                      {viewMode !== "active" ? (
                         <button
                           onClick={() => handleRestore(job.id)}
                           className="text-muted-foreground hover:text-primary transition-colors"
@@ -481,7 +527,7 @@ export default function VagasPage() {
               ))}
               {jobs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center">
+                  <TableCell colSpan={9} className="py-8 text-center">
                     Nenhuma vaga encontrada.
                   </TableCell>
                 </TableRow>
