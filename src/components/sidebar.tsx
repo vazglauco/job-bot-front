@@ -34,7 +34,7 @@ function UserMenu({
   setUserName,
 }: {
   users: UserData[];
-  userName: string;
+  userName: string | null;
   setUserName: (name: string) => void;
 }) {
   return (
