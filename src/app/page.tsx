@@ -9,9 +9,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+  Badge,
+  Progress,
+} from "@gvaz/gvaz-ui";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 import {
   Briefcase,
   Target,
@@ -47,32 +49,16 @@ interface DashboardData {
 
 const statusConfig: Record<
   string,
-  { label: string; icon: React.ElementType; gradient: string; text: string }
+  {
+    label: string;
+    icon: React.ElementType;
+    variant: "default" | "secondary" | "outline" | "destructive";
+  }
 > = {
-  new: {
-    label: "Novas",
-    icon: Sparkles,
-    gradient: "from-blue-500/20 to-blue-600/5",
-    text: "text-blue-600",
-  },
-  favorite: {
-    label: "Favoritas",
-    icon: Star,
-    gradient: "from-amber-500/20 to-amber-600/5",
-    text: "text-amber-600",
-  },
-  applied: {
-    label: "Aplicadas",
-    icon: Send,
-    gradient: "from-emerald-500/20 to-emerald-600/5",
-    text: "text-emerald-600",
-  },
-  dismissed: {
-    label: "Descartadas",
-    icon: EyeOff,
-    gradient: "from-gray-400/20 to-gray-500/5",
-    text: "text-gray-500",
-  },
+  new: { label: "Novas", icon: Sparkles, variant: "default" },
+  favorite: { label: "Favoritas", icon: Star, variant: "secondary" },
+  applied: { label: "Aplicadas", icon: Send, variant: "secondary" },
+  dismissed: { label: "Descartadas", icon: EyeOff, variant: "outline" },
 };
 
 export default function DashboardPage() {
@@ -113,55 +99,50 @@ export default function DashboardPage() {
       ? Math.round((data.matchedJobs / data.totalJobs) * 100)
       : 0;
 
+  const stats = [
+    { title: "Total de Vagas", value: data.totalJobs, icon: Briefcase, sub: undefined as string | undefined },
+    { title: "Com Match", value: data.matchedJobs, icon: Target, sub: `${matchRate}% taxa de match` },
+    { title: "Boards Ativos", value: data.boardCount, icon: Building2, sub: undefined as string | undefined },
+    { title: "Keywords", value: data.keywords.length, icon: Tag, sub: undefined as string | undefined },
+  ];
+
   return (
     <div className="space-y-8">
-      {/* Hero header */}
-      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-primary via-primary/90 to-primary/70 px-8 py-8 text-primary-foreground shadow-lg">
-        <div className="absolute -right-10 -top-10 size-48 rounded-full bg-white/5" />
-        <div className="absolute -bottom-8 right-20 size-32 rounded-full bg-white/5" />
-        <div className="relative">
-          <p className="text-sm font-medium text-primary-foreground/70">
-            Dashboard
-          </p>
-          <h2 className="mt-1 text-3xl font-bold tracking-tight capitalize">
-            Olá, {userName}
-          </h2>
-          <p className="mt-2 max-w-md text-base text-primary-foreground/70">
-            Você tem <span className="font-semibold text-primary-foreground">{data.totalJobs} vagas</span> coletadas
-            {data.matchedJobs > 0 && (
-              <>, com <span className="font-semibold text-primary-foreground">{matchRate}%</span> de match.</>
-            )}
-          </p>
-        </div>
+      <PageHeader title="Dashboard" />
+
+      {/* Greeting */}
+      <div>
+        <h2 className="text-2xl font-semibold capitalize">Olá, {userName}</h2>
+        <p className="mt-1 text-muted-foreground">
+          Você tem{" "}
+          <span className="font-medium text-foreground">{data.totalJobs} vagas</span>{" "}
+          coletadas
+          {data.matchedJobs > 0 && (
+            <>, com{" "}
+              <span className="font-medium text-foreground">{matchRate}%</span> de match.
+            </>
+          )}
+        </p>
       </div>
 
       {/* Stats cards */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total de Vagas"
-          value={data.totalJobs}
-          icon={Briefcase}
-          accent="from-indigo-500 to-indigo-600"
-        />
-        <StatsCard
-          title="Com Match"
-          value={data.matchedJobs}
-          icon={Target}
-          accent="from-violet-500 to-violet-600"
-          sub={`${matchRate}% taxa de match`}
-        />
-        <StatsCard
-          title="Boards Ativos"
-          value={data.boardCount}
-          icon={Building2}
-          accent="from-cyan-500 to-cyan-600"
-        />
-        <StatsCard
-          title="Keywords"
-          value={data.keywords.length}
-          icon={Tag}
-          accent="from-fuchsia-500 to-fuchsia-600"
-        />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.title}</p>
+                  <p className="mt-1 text-3xl font-bold tabular-nums">{stat.value}</p>
+                  {stat.sub && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{stat.sub}</p>
+                  )}
+                </div>
+                <stat.icon size={20} className="mt-0.5 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Status breakdown */}
@@ -174,21 +155,16 @@ export default function DashboardPage() {
               ? Math.round((count / data.totalJobs) * 100)
               : 0;
           return (
-            <Card key={key} className="group overflow-hidden border-0 shadow-sm transition-shadow hover:shadow-md">
-              <CardContent className="relative p-5">
-                <div className={`absolute inset-0 bg-linear-to-br ${config.gradient}`} />
-                <div className="relative flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {config.label}
-                    </p>
-                    <p className="mt-1 text-3xl font-bold tabular-nums">{count}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{pct}% do total</p>
-                  </div>
-                  <div className={`rounded-xl p-3 ${config.text} bg-white/60`}>
-                    <config.icon size={22} />
-                  </div>
+            <Card key={key}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <config.icon size={16} className="text-muted-foreground" />
+                  <Badge variant={config.variant} className="text-xs">
+                    {pct}%
+                  </Badge>
                 </div>
+                <p className="mt-3 text-3xl font-bold tabular-nums">{count}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{config.label}</p>
               </CardContent>
             </Card>
           );
@@ -196,12 +172,12 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* Jobs by source (wider) */}
-        <Card className="border-0 shadow-sm lg:col-span-3">
-          <CardHeader className="pb-4">
+        {/* Jobs by source */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
             <div className="flex items-center gap-2">
-              <TrendingUp size={18} className="text-primary" />
-              <CardTitle className="text-lg">Vagas por Fonte</CardTitle>
+              <TrendingUp size={16} className="text-primary" />
+              <CardTitle className="text-base">Vagas por Fonte</CardTitle>
             </div>
             <CardDescription>Distribuição por plataforma ATS</CardDescription>
           </CardHeader>
@@ -209,39 +185,16 @@ export default function DashboardPage() {
             <div className="space-y-4">
               {data.jobsBySource
                 .sort((a, b) => b.count - a.count)
-                .map((source, i) => {
-                  const max = Math.max(
-                    ...data.jobsBySource.map((s) => s.count)
-                  );
-                  const pct = max > 0 ? (source.count / max) * 100 : 0;
-                  const colors = [
-                    "bg-indigo-500",
-                    "bg-violet-500",
-                    "bg-cyan-500",
-                    "bg-fuchsia-500",
-                    "bg-emerald-500",
-                    "bg-amber-500",
-                    "bg-rose-500",
-                  ];
+                .map((source) => {
+                  const max = Math.max(...data.jobsBySource.map((s) => s.count));
+                  const pct = max > 0 ? Math.round((source.count / max) * 100) : 0;
                   return (
-                    <div key={source.source} className="space-y-2">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-sm font-semibold">
-                          {source.source}
-                        </span>
-                        <span className="text-sm font-bold tabular-nums text-foreground">
-                          {source.count}
-                          <span className="ml-1 text-xs font-normal text-muted-foreground">
-                            vagas
-                          </span>
-                        </span>
+                    <div key={source.source} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{source.source}</span>
+                        <span className="text-sm text-muted-foreground">{source.count}</span>
                       </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className={`h-full rounded-full ${colors[i % colors.length]} transition-all duration-500`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                      <Progress value={pct} />
                     </div>
                   );
                 })}
@@ -250,24 +203,18 @@ export default function DashboardPage() {
         </Card>
 
         {/* Keywords */}
-        <Card className="border-0 shadow-sm lg:col-span-2">
-          <CardHeader className="pb-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
             <div className="flex items-center gap-2">
-              <Tag size={18} className="text-primary" />
-              <CardTitle className="text-lg">Keywords</CardTitle>
+              <Tag size={16} className="text-primary" />
+              <CardTitle className="text-base">Keywords</CardTitle>
             </div>
-            <CardDescription>
-              Palavras-chave ativas
-            </CardDescription>
+            <CardDescription>Palavras-chave ativas</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {data.keywords.map((kw) => (
-                <Badge
-                  key={kw}
-                  variant="secondary"
-                  className="bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/15"
-                >
+                <Badge key={kw} variant="secondary">
                   {kw}
                 </Badge>
               ))}
@@ -277,12 +224,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent jobs */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-4">
+      <Card>
+        <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-primary" />
-              <CardTitle className="text-lg">Vagas Recentes</CardTitle>
+              <Sparkles size={16} className="text-primary" />
+              <CardTitle className="text-base">Vagas Recentes</CardTitle>
             </div>
             <Link
               href="/vagas"
@@ -292,34 +239,27 @@ export default function DashboardPage() {
               <ArrowRight size={14} />
             </Link>
           </div>
-          <CardDescription>Últimas 10 vagas coletadas</CardDescription>
+          <CardDescription>Últimas vagas coletadas</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
+          <div className="divide-y">
             {data.recentJobs.map((job) => {
               const sc = statusConfig[job.status] || statusConfig.new;
               return (
                 <div
                   key={job.id}
-                  className="group flex items-center gap-4 rounded-xl border border-border/50 bg-muted/30 px-5 py-3.5 transition-all hover:border-primary/20 hover:bg-muted/60 hover:shadow-sm"
+                  className="flex items-center gap-4 py-3 first:pt-0 last:pb-0"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
-                      {job.title}
-                    </p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
+                    <p className="truncate text-sm font-medium">{job.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       {job.company_name || "—"}
-                      <span className="mx-2 text-border">·</span>
+                      <span className="mx-1.5">·</span>
                       {job.ats}
-                      <span className="mx-2 text-border">·</span>
-                      {new Date(job.fetched_at).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className={`${sc.text} shrink-0 gap-1 border-0 bg-white/80 px-2.5 py-1`}
-                  >
-                    <sc.icon size={12} />
+                  <Badge variant={sc.variant} className="shrink-0 gap-1">
+                    <sc.icon size={11} />
                     {sc.label}
                   </Badge>
                 </div>
@@ -332,59 +272,38 @@ export default function DashboardPage() {
   );
 }
 
-function StatsCard({
-  title,
-  value,
-  icon: Icon,
-  accent,
-  sub,
-}: {
-  title: string;
-  value: number;
-  icon: React.ElementType;
-  accent: string;
-  sub?: string;
-}) {
-  return (
-    <Card className="group overflow-hidden border-0 shadow-sm transition-shadow hover:shadow-md">
-      <CardContent className="flex items-center gap-4 p-5">
-        <div
-          className={`flex size-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${accent} text-white shadow-sm`}
-        >
-          <Icon size={22} />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-3xl font-bold tabular-nums tracking-tight">{value}</p>
-          {sub && (
-            <p className="text-xs text-muted-foreground">{sub}</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function DashboardSkeleton() {
   return (
     <div className="space-y-8">
-      <Skeleton className="h-40 rounded-2xl" />
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <Skeleton className="h-9 w-40" />
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="border-0 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-5">
-              <Skeleton className="size-12 rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-14" />
+          <Card key={i}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-8 w-14" />
+                </div>
+                <Skeleton className="size-5 rounded" />
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-32 rounded-xl" />
+          <Card key={i}>
+            <CardContent className="p-5 space-y-3">
+              <Skeleton className="size-4 rounded" />
+              <Skeleton className="h-8 w-12" />
+              <Skeleton className="h-4 w-20" />
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

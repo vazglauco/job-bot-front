@@ -5,10 +5,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+} from "@gvaz/gvaz-ui";
+import { Badge } from "@gvaz/gvaz-ui";
+import { Button } from "@gvaz/gvaz-ui";
+import { Separator } from "@gvaz/gvaz-ui";
 import {
   ExternalLink,
   MapPin,

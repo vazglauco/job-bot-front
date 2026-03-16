@@ -15,17 +15,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
+  Badge,
+  Button,
+  Input,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@gvaz/gvaz-ui";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 import { Plus, Pencil, Trash2, Briefcase, Users, CheckCircle2 } from "lucide-react";
 
 const avatarGradients = [
@@ -130,18 +129,15 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Usuários</h2>
-          <p className="mt-1 text-muted-foreground">
-            Gerencie usuários e suas keywords de busca
-          </p>
-        </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2">
-          <Plus size={16} />
-          Novo Usuário
-        </Button>
-      </div>
+      <PageHeader
+        title="Usuários"
+        actions={
+          <Button onClick={() => setShowCreate(true)} className="gap-2">
+            <Plus size={16} />
+            Novo Usuário
+          </Button>
+        }
+      />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {users.map((user, i) => {
@@ -151,11 +147,11 @@ export default function UsersPage() {
             .filter(Boolean);
           const gradient = avatarGradients[i % avatarGradients.length];
           return (
-            <Card key={user.name} className="group overflow-hidden border-0 shadow-sm transition-all hover:shadow-md">
+            <Card key={user.name} className="group overflow-hidden transition-all">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${gradient} text-sm font-bold text-white shadow-sm`}>
+                    <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br ${gradient} text-sm font-bold text-white`}>
                       {user.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>

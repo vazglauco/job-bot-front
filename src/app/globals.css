@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@source "../../node_modules/@gvaz/gvaz-ui/dist/**/*.{js,mjs}";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -48,7 +50,7 @@
 }
 
 :root {
-  --background: oklch(0.98 0.003 270);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.15 0.02 270);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.15 0.02 270);
@@ -120,8 +122,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html, body {
+    @apply bg-white;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   html {

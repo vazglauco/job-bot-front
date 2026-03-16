@@ -21,19 +21,24 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+  Button,
+  Badge,
+  Card,
+  CardContent,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@gvaz/gvaz-ui";
 import { Skeleton } from "@/components/ui/skeleton";
 import { JobDetailModal } from "@/components/job-detail-modal";
+import { PageHeader } from "@/components/page-header";
 import {
   Star,
   Send,
@@ -53,12 +58,6 @@ import {
   ArrowUpDown,
   AlertTriangle,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface Job {
   id: number;
@@ -127,17 +126,17 @@ export default function VagasPage() {
     if (!userName) return;
     const filters: JobFilters = { page, perPage: 20 };
     if (search) filters.search = search;
-    if (atsFilter) filters.ats = atsFilter;
-    if (keywordFilter) filters.keyword = keywordFilter;
     if (sortBy) filters.sortBy = sortBy;
 
     if (viewMode === "deleted") {
       filters.status = "deleted";
     } else if (viewMode === "irrelevant") {
       filters.status = "irrelevant";
-    } else if (statusFilter) {
+    } else if (statusFilter && statusFilter !== "all") {
       filters.status = statusFilter;
     }
+    if (atsFilter && atsFilter !== "all") filters.ats = atsFilter;
+    if (keywordFilter && keywordFilter !== "all") filters.keyword = keywordFilter;
 
     startTransition(async () => {
       const result = await getJobs(userName, filters);
@@ -257,16 +256,14 @@ export default function VagasPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Vagas</h2>
-        <p className="mt-1 text-muted-foreground">
-          <span className="font-semibold text-foreground">{total}</span> vagas encontradas para{" "}
-          <span className="font-semibold capitalize text-foreground">{userName}</span>
-        </p>
-      </div>
+      <PageHeader
+        title="Vagas"
+      />
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-card p-4 shadow-sm">
+      <Card>
+      <CardContent className="p-4">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -317,7 +314,7 @@ export default function VagasPage() {
             </SelectContent>
           </Select>
         )}
-        {(search || atsFilter || keywordFilter || statusFilter) && (
+        {(search || (atsFilter && atsFilter !== "all") || (keywordFilter && keywordFilter !== "all") || (statusFilter && statusFilter !== "all")) && (
           <Button
             variant="ghost"
             size="sm"
@@ -354,19 +351,21 @@ export default function VagasPage() {
             onClick={() => { setViewMode(viewMode === "deleted" ? "active" : "deleted"); setPage(1); setSelected(new Set()); }}
           >
             <Trash2 size={14} className="mr-1" />
-            {viewMode === "deleted" ? "Voltar às vagas" : "Lixeira"}
+          {viewMode === "deleted" ? "Voltar às vagas" : "Lixeira"}
           </Button>
         </div>
       </div>
+      </CardContent>
+      </Card>
 
       {/* Bulk actions */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-5 py-3 shadow-sm">
-          <span className="text-sm font-semibold text-primary">
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-2.5">
+          <span className="text-sm font-medium">
             {selected.size} selecionada(s)
           </span>
-          <div className="mx-2 h-5 w-px bg-primary/20" />
-          <div className="flex gap-2">
+          <div className="mx-2 h-4 w-px bg-border" />
+          <div className="flex flex-wrap gap-2">
             {viewMode !== "active" ? (
               <Button
                 variant="outline"
@@ -414,7 +413,7 @@ export default function VagasPage() {
       {isPending && jobs.length === 0 ? (
         <TableSkeleton />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
+        <Card className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -534,16 +533,16 @@ export default function VagasPage() {
               )}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between rounded-xl border border-border/50 bg-card px-5 py-3 shadow-sm">
+        <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Página <span className="font-semibold text-foreground">{page}</span> de{" "}
-            <span className="font-semibold text-foreground">{totalPages}</span>{" "}
-            <span className="text-muted-foreground/70">({total} vagas)</span>
+            Página <span className="font-medium text-foreground">{page}</span> de{" "}
+            <span className="font-medium text-foreground">{totalPages}</span>{" "}
+            ({total} vagas)
           </p>
           <div className="flex gap-2">
             <Button
@@ -595,13 +594,13 @@ function StatusDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={
-          <button className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${current.color}`}>
-            <current.icon size={12} />
-            {current.label}
-          </button>
-        }
-      />
+        asChild
+      >
+        <button className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${current.color}`}>
+          <current.icon size={12} />
+          {current.label}
+        </button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent>
         {statusOptions.map((opt) => (
           <DropdownMenuItem

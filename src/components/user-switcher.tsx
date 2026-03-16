@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@gvaz/gvaz-ui";
 import { cn } from "@/lib/utils";
 
 interface UserData {
