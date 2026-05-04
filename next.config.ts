@@ -1,8 +1,13 @@
 import type { NextConfig } from "next";
 
+const isTauri = process.env.TAURI === "1";
+
 const nextConfig: NextConfig = {
-  /* config options here */
   reactCompiler: true,
+  // Static export only for Tauri production build; web and Tauri dev use SSR
+  ...(isTauri ? { output: "export" } : {}),
+  images: { unoptimized: true },
+  trailingSlash: isTauri,
 };
 
 export default nextConfig;

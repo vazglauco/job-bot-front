@@ -12,21 +12,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@gvaz/gvaz-ui";
-import { LayoutDashboard, Briefcase, Users, Bot, ChevronDown, Check } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, Bot, ChevronDown, Check, Play } from "lucide-react";
 import { useUser } from "@/lib/user-context";
-import { getUsers } from "@/app/actions/users";
+import { getUsers, type User as BridgeUser } from "@/lib/tauri-bridge";
 import { cn } from "@/lib/utils";
 
 const navConfig: Omit<SidebarNavItem, "isActive">[] = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard },
   { title: "Vagas", href: "/vagas", icon: Briefcase },
+  { title: "Executar", href: "/executar", icon: Play },
   { title: "Usuários", href: "/users", icon: Users },
 ];
 
-interface UserData {
-  name: string;
-  keywords: string;
-}
+type UserData = BridgeUser;
 
 function UserMenu({
   users,

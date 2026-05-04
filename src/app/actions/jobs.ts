@@ -11,10 +11,25 @@ export interface JobFilters {
   page?: number;
   perPage?: number;
   sortBy?: string;
+  runId?: number;
+}
+
+export interface RunGroup {
+  id: number;
+  run_at: Date;
+}
+
+export async function getRuns(userName: string): Promise<RunGroup[]> {
+  const runs = await prisma.runs.findMany({
+    where: { user_name: userName, stage: "run" },
+    orderBy: { run_at: "desc" },
+    select: { id: true, run_at: true },
+  });
+  return runs;
 }
 
 export async function getJobs(userName: string, filters: JobFilters = {}) {
-  const { search, ats, keyword, status, page = 1, perPage = 20, sortBy } = filters;
+  const { search, ats, keyword, status, page = 1, perPage = 20, sortBy, runId } = filters;
 
   const where: Record<string, unknown> = { user_name: userName };
 
@@ -35,6 +50,7 @@ export async function getJobs(userName: string, filters: JobFilters = {}) {
       { company_name: { contains: search, mode: "insensitive" } },
     ];
   }
+  if (runId != null) where.run_id = runId;
   if (ats) where.ats = ats;
   if (keyword) {
     where.matched_keywords = { contains: keyword, mode: "insensitive" };

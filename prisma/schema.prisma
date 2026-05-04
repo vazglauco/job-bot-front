@@ -34,7 +34,10 @@ model jobs {
   status           String   @default("new")
   ai_score         Float?
   ai_analysis      Json?
+  description      String?
+  run_id           Int?
   users            users    @relation(fields: [user_name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+  run              runs?    @relation(fields: [run_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@unique([url, user_name])
 }
@@ -45,6 +48,7 @@ model runs {
   stage     String
   detail    String?
   run_at    DateTime @db.Timestamptz(6)
+  jobs      jobs[]
 }
 
 model users {

@@ -1,22 +1,44 @@
 "use client";
 
 import { UserProvider } from "@/lib/user-context";
-import { Sidebar } from "@/components/sidebar";
-import { SidebarProvider, MainLayout } from "@gvaz/gvaz-ui";
+import { AppShell } from "@/components/app-shell";
+import { ToastProvider } from "@/lib/toast-context";
+import { ConfirmProvider } from "@/lib/confirm-context";
+import { useEffect, useState } from "react";
+import { getConfig, isTauri } from "@/lib/tauri-bridge";
+
+function Shell({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  useEffect(() => {
+    if (!isTauri()) { setReady(true); return; }
+    getConfig()
+      .then((cfg) => {
+        if (!cfg.database_url) setNeedsSetup(true);
+        setReady(true);
+      })
+      .catch(() => {
+        setNeedsSetup(true);
+        setReady(true);
+      });
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <ToastProvider>
+      <ConfirmProvider>
+        <UserProvider>
+          <AppShell initialView={needsSetup ? "setup" : "vagas"}>
+            {children}
+          </AppShell>
+        </UserProvider>
+      </ConfirmProvider>
+    </ToastProvider>
+  );
+}
 
 export function ClientShell({ children }: { children: React.ReactNode }) {
-  return (
-    <UserProvider>
-      <SidebarProvider>
-        <Sidebar />
-        <MainLayout>
-          <main className="min-h-screen bg-white">
-            <div className="px-6 py-6">
-              {children}
-            </div>
-          </main>
-        </MainLayout>
-      </SidebarProvider>
-    </UserProvider>
-  );
+  return <Shell>{children}</Shell>;
 }
